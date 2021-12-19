@@ -1,10 +1,14 @@
 ﻿using System;
+using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
+[assembly: InternalsVisibleTo("Hangman.Tests")]
 
 namespace Hangman
 {
     class Program
     {
+        private static string pathToTextFile = Directory.GetCurrentDirectory() + "\\words.txt";
         private static bool isNotGameOverOrWordMatch = true;
         private static Random rnd = new Random();
         private static string secretWord = "";
@@ -20,18 +24,14 @@ namespace Hangman
             Console.Clear();
             Console.WriteLine("Välkommen till Hangman!");
 
+            int wordIndex = rnd.Next(0, 5);
+            secretWord = GenerateLetters(wordIndex, pathToTextFile);
+            updatedDashedWord = UpdateDashedWord(secretWord);
+            Console.WriteLine("Återstående gissningar: " + numberOfGuesses);
+
             do
             {
                 Console.WriteLine();
-
-                if (secretWord == "")
-                {
-                    int wordIndex = rnd.Next(0, 5);
-                    secretWord = GenerateLetters(wordIndex);
-                    updatedDashedWord = UpdateDashedWord(secretWord);
-                    Console.WriteLine("Återstående gissningar: " + numberOfGuesses);
-                }
-
                 Console.WriteLine("Felaktiga bokstäver som du gissat på: ");
                 Console.WriteLine(sbIncorrectLetters.ToString());
 
@@ -118,14 +118,41 @@ namespace Hangman
             Console.WriteLine("Spelet avslutas...");
         }
 
-        private static string GenerateLetters(int index)
+        internal static string GenerateLetters(int index, string path)
         {
-            string[] letters = new string[5] { "programmering", "it", "applikation", "webbsida", "server" };
+            string outputStr = "";
 
-            return letters[index];
+            try
+            {
+                StreamReader sr = new StreamReader(path);
+
+                string wordStr = sr.ReadLine();
+                sr.Close();
+
+                string[] letters = wordStr.Split(',');
+                string[] lettersOutput = new string[letters.Length];
+
+                int count = 0;
+                foreach (string letter in letters)
+                {
+                    if (letter != ",")
+                    {
+                        lettersOutput[count] = letter;
+                        count++;
+                    }
+                }
+
+                outputStr = lettersOutput[index];
+            }
+            catch
+            {
+                throw new Exception("Fel: Något blev fel. Kunde inte läsa in filen!");
+            }
+
+            return outputStr;
         }
 
-        private static string UpdateDashedWord(string word)
+        internal static string UpdateDashedWord(string word)
         {
             string dashedWordStr = "";
             int loopValue = 0;
@@ -163,7 +190,7 @@ namespace Hangman
             return dashedWordStr;
         }
 
-        private static int CountNumberOfGuesses(int guesses, char letter)
+        internal static int CountNumberOfGuesses(int guesses, char letter)
         {
             int guessesLeft;
             bool containsLetter = false;
@@ -179,6 +206,9 @@ namespace Hangman
                 }
             }
 
+            if (secretWord.Contains(letter))
+                containsLetter = true;
+
             if(containsLetter == false)
             {
                 guessesLeft = --guesses;
@@ -191,7 +221,7 @@ namespace Hangman
             return guessesLeft;
         }
 
-        private static char CheckLetterInStorage(char character)
+        internal static char CheckLetterInStorage(char character)
         {
             if (secretWord.Contains(character))
             {
@@ -224,7 +254,7 @@ namespace Hangman
             return character;
         }
 
-        private static bool CheckWholeWord(string word)
+        internal static bool CheckWholeWord(string word)
         {
             bool wordIsCorrect = false;
 
@@ -241,7 +271,7 @@ namespace Hangman
             return wordIsCorrect;
         }
 
-        private static int CheckIfGameOver()
+        internal static int CheckIfGameOver()
         {
             string dashedWordjoined = string.Join("", dashedWord);
 
